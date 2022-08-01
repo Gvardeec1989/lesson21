@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class Storage(ABC):
-
+    @abstractmethod
     def add(self, name, count):  # увеличивает запас items
         pass
 
@@ -25,32 +25,35 @@ class Storage(ABC):
 
 class Store(Storage):
 
-    def __int__(self, items: dict, capacity=100):
+    def __init__(self, items: dict, capacity=100):
         self.__items = items
         self.__capacity = capacity
 
     def add(self, name, count):            # добавление
         if name in self.__items.keys():
             if self.get_free_space() >= count:
-                print("Товар добален")
+                print("товар добавлен")
                 self.__items[name] += count
+                return True
             else:
-                return "На складе недостаточно места"
+                print("недостаточно товара на складе")
+                return False
         else:
             if self.get_free_space() >= count:
-                print("Товар добален")
+                print("товар добавлен")
                 self.__items[name] = count
+                return True
             else:
-                return "На складе недостаточно места"
+                print("недостаточно товара на складе")
+                return False
 
     def remove(self, name, count):         # убавление
-        if self.__items[name] <= count:
-            print("Нужное колличество есть на складе")
+        if self.__items[name] > count:
             self.__items[name] -= count
         else:
-            return "Недостаточно товара"
+            return "Недостаточно товара на складе"
 
-    def _get_free_space(self):               # вернуть количество свободных мест
+    def get_free_space(self):               # вернуть количество свободных мест
         free_place = 0
         for value in self.__items.values():
             free_place += value
@@ -59,7 +62,7 @@ class Store(Storage):
     def get_items(self):                    # возвращает содержание склада в словаре {товар: количество}
         return self.__items
 
-    def _get_unique_items_count(self):       # возвращает количество уникальных товаров.
+    def get_unique_items_count(self):       # возвращает количество уникальных товаров.
         return len(self.__items.keys())
 
     def __str__(self):
@@ -70,19 +73,21 @@ class Store(Storage):
 
 
 class Shop(Store):
-    def __int__(self, items: dict, capacity=20):
-        self.__items = items
-        self.__capacity = capacity
+    def __init__(self, items: dict, capacity=20):
+        super().__init__(items, capacity)
 
     def add(self, name, count):                     # увеличивает запас items с учетом лимита capacity
         if self.get_unique_items_count() >= 5:
+            print("Добавление невозможно")
             return "Добавление невозможно"
         else:
             super().add(name, count)
 
+# методы remove\get_free_space()\get_items()\get_unique_items_count() - исполняются из Store
+
 
 class Request:
-    def __int__(self, request_str):
+    def __init__(self, request_str):
         req_list = request_str.split()
         action = req_list[0]
         self.__count = int(req_list[1])
@@ -98,14 +103,29 @@ class Request:
             self.__from = None
 
     def move(self):
+        if self.__to and self.__from:
+            if eval(self.__to).add(self.__item, self.__count):
+                eval(self.__from).remove(self.__item, self.__count)
         if self.__to:
             eval(self.__to).add(self.__item, self.__count)
         if self.__from:
             eval(self.__from).remove(self.__item, self.__count)
 
+storage_1 = Store(items={"телефон": 10, "компьютер": 10, "приставка": 10})
+storage_2 = Store(items={"телефон": 10, "компьютер": 10, "холодильник": 10})
+shop_1 = Shop(items={"телефон": 3, "компьютер": 3, "холодильник": 3})
 
-storage_1 = Store(items={"Яблоки": 10, "Печенье": 10, "Крупа": 10})
-storage_2 = Store(Items={"Компьютер": 10, "Наушники": 10, "Лодка": 10})
-shop_1 = Shop(items={"Яблоки": 3, "Печенье": 3, "Крупа": 3})
-
-print(storage_2)
+while True:
+    print("в наличие:")
+    print(f"storage_1: {storage_1}")
+    print(f"storage_2: {storage_2}")
+    print(f"shop_1: {shop_1}")
+    user_text = input("введите команду:\n")       # Забрать 4 телефон из storage_2
+    if user_text == "стоп":
+        break
+    else:
+        try:
+            req = Request(user_text)
+            req.move()
+        except Exception as e:
+            print("произошла ошибка")
